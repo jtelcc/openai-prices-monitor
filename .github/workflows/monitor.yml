@@ -1,0 +1,36 @@
+name: OpenAI API Monitor
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 毎週月曜日 0:00 (UTC)
+  workflow_dispatch: # 手動実行ボタン
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # JSONを更新してコミットするために必要
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Monitor
+        run: python monitor.py
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add last_known_data.json
+          git commit -m "Update last known OpenAI data [skip ci]" || echo "No changes to commit"
+          git push
